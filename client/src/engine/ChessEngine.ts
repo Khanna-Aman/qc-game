@@ -390,9 +390,17 @@ export function makeMove(
                       isInSuperposition: false
                     };
                     newPieces.set(id, collapsedPiece);
+
+                    // CRITICAL: Put the escaped piece back on the chess.js board!
+                    // Chess.js thinks it captured the piece, but it escaped to another position
+                    const escapeSquare = posToSquare(collapsed.position);
+                    const pieceColor = piece.owner === 'white' ? 'w' : 'b';
+                    const pieceTypeChar = piece.type === 'knight' ? 'n' : piece.type[0];
+                    newChess.put({ type: pieceTypeChar as PieceSymbol, color: pieceColor }, escapeSquare);
+
                     collapseResult = {
                       pieceId: id,
-                      collapsedTo: posToSquare(collapsed.position),
+                      collapsedTo: escapeSquare,
                       probability: collapsed.probability,
                       wasCapture: false
                     };
