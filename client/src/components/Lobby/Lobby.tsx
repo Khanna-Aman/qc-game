@@ -1,5 +1,6 @@
 import { useState, lazy, Suspense } from 'react';
 import './Lobby.css';
+import { RulesModal } from '../RulesModal/RulesModal';
 
 // Lazy load the 3D animation to reduce initial bundle size
 const QuantumAnimation = lazy(() =>
@@ -28,6 +29,7 @@ export function Lobby({
   const [joinRoomId, setJoinRoomId] = useState('');
   const [copied, setCopied] = useState(false);
   const [maxSuperpositions, setMaxSuperpositions] = useState(2);
+  const [showRules, setShowRules] = useState(false);
 
   const handleCreateRoom = async () => {
     await onCreateRoom(maxSuperpositions);
@@ -163,6 +165,14 @@ export function Lobby({
           </ul>
         </div>
       </div>
+
+      {/* Floating Rules Button */}
+      <button className="help-btn" onClick={() => setShowRules(true)}>
+        ?
+      </button>
+
+      {/* Rules Modal */}
+      <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} />
     </div>
   );
 }
