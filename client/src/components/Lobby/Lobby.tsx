@@ -4,6 +4,7 @@ import './Lobby.css';
 interface LobbyProps {
   onCreateRoom: (maxSuperpositions: number) => Promise<void>;
   onJoinRoom: (roomId: string) => Promise<void>;
+  onCancel?: () => void;
   roomId: string | null;
   isConnecting: boolean;
   isConnected: boolean;
@@ -13,6 +14,7 @@ interface LobbyProps {
 export function Lobby({
   onCreateRoom,
   onJoinRoom,
+  onCancel,
   roomId,
   isConnecting,
   isConnected,
@@ -59,6 +61,11 @@ export function Lobby({
             <p className="hint">
               Your friend should enter this code to join the game
             </p>
+            {onCancel && (
+              <button onClick={onCancel} className="back-btn">
+                ← Back to Home
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -139,10 +146,10 @@ export function Lobby({
         <div className="lobby-footer">
           <h3>🎯 How to Play</h3>
           <ul>
-            <li><strong>Split moves</strong> put pieces in superposition (two places at once)</li>
-            <li><strong>Merge moves</strong> combine superposed pieces</li>
-            <li><strong>Captures</strong> trigger quantum measurement</li>
-            <li>Reduce opponent's King probability to 0 to win!</li>
+            <li><strong>Split moves</strong> put pieces in superposition (50% at two squares)</li>
+            <li><strong>Captures</strong> on superposition pieces collapse them randomly</li>
+            <li>If collapse favors you, <strong>capture succeeds</strong>; otherwise, the piece <strong>escapes!</strong></li>
+            <li>Capture the opponent's King to win!</li>
           </ul>
         </div>
       </div>

@@ -6,7 +6,7 @@
 
 **Split pieces into superposition. Collapse probabilities on capture. Outsmart your opponent in two realities at once.**
 
-[![Play Now](https://img.shields.io/badge/▶%20PLAY%20NOW-00C853?style=for-the-badge&logo=googlechrome&logoColor=white)](https://quantum-chess.vercel.app)
+[![Play Now](https://img.shields.io/badge/▶%20PLAY%20NOW-00C853?style=for-the-badge&logo=googlechrome&logoColor=white)](https://qc-game.vercel.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)
@@ -19,6 +19,8 @@
 *"God does not play dice with the universe... but we do play dice with chess."*
 
 </div>
+
+> ⚠️ **First time playing?** The backend runs on a free tier and may take **30-60 seconds to wake up** on the first connection. If you see "Failed to fetch", just wait a moment and try again — it will work once the server spins up!
 
 ---
 
@@ -35,8 +37,8 @@
 ## 🎮 Features
 
 - **Quantum Mechanics**: Pieces can exist in superposition across multiple squares
-- **Split Moves**: Knights can split into two positions simultaneously (50% probability each)
-- **Measurement/Collapse**: Capturing triggers quantum measurement, collapsing superpositions
+- **Split Moves**: Any piece (except Kings) can split into two positions simultaneously (50% probability each)
+- **Measurement/Collapse**: Capturing triggers quantum measurement — piece might be there, or it might escape!
 - **P2P Multiplayer**: Direct peer-to-peer connection via WebRTC (no game server)
 - **Deterministic RNG**: Seeded random number generator ensures both peers see identical results
 - **State Verification**: Hash-based state verification prevents desync
@@ -75,8 +77,8 @@ Quantum_chess/
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/quantum-chess.git
-cd quantum-chess
+git clone https://github.com/khanna-aman/Quantum-Chess.git
+cd Quantum-Chess
 
 # Install engine dependencies
 npm install
@@ -154,17 +156,20 @@ Once peers connect, all game data flows directly P2P.
 - Each position has an associated probability (must sum to 1.0)
 
 ### Split Moves
-- Knights can perform "split" moves
-- The piece enters superposition at two target squares (50% each)
+- Any piece (except the King) can perform "split" moves
+- Click "Split Move", select a piece, then choose two valid destinations
+- The piece enters superposition at both squares (50% probability each)
 
 ### Measurement (Collapse)
-- Capturing a piece in superposition triggers measurement
-- The piece collapses to one position based on probability
-- Uses seeded RNG for deterministic results across peers
+- Capturing a piece in superposition triggers quantum measurement
+- The piece randomly collapses to one of its positions based on probability
+- If it collapses where you're attacking → **capture succeeds!**
+- If it collapses elsewhere → **the piece escapes!** (your piece still moves to the target square)
+- Uses seeded RNG for deterministic results across both players
 
 ### Win Condition
-- Game ends when a King's total probability reaches 0
-- (King captured or collapsed out of existence)
+- Capture the opponent's King to win
+- Even a King in superposition can be captured if the measurement favors you!
 
 ## 🔒 Security & Fair Play
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Chessboard } from './components/Chessboard';
 import { Lobby } from './components/Lobby';
 import { MoveNotation } from './components/MoveNotation';
+import { RulesModal } from './components/RulesModal/RulesModal';
 import { ToastContainer } from './components/Toast';
 import { getGameLog, toQuantumFEN } from './engine/ChessEngine';
 import { useChessGame } from './hooks/useChessGame';
@@ -47,6 +48,9 @@ function App() {
 
   // Resign confirmation state
   const [showResignConfirm, setShowResignConfirm] = useState(false);
+
+  // Rules modal state
+  const [showRulesModal, setShowRulesModal] = useState(false);
 
   // Show toast notifications for state changes
   useEffect(() => {
@@ -104,11 +108,6 @@ function App() {
     }
   }, [gameState?.gameStatus, playerColor, success, warning]);
 
-  // Handle leave
-  const handleLeave = () => {
-    disconnect();
-  };
-
   // Show lobby if not in a game
   if (!gameState || !isConnected) {
     return (
@@ -117,6 +116,7 @@ function App() {
         <Lobby
           onCreateRoom={createRoom}
           onJoinRoom={joinRoom}
+          onCancel={roomId ? disconnect : undefined}
           roomId={roomId}
           isConnecting={connectionState === 'connecting'}
           isConnected={isConnected}
@@ -219,10 +219,6 @@ function App() {
           >
             📝 Copy QFEN
           </button>
-
-          <button className="leave-btn" onClick={handleLeave}>
-            🚪 Leave Game
-          </button>
         </div>
 
         {/* Resign confirmation popup */}
@@ -252,19 +248,25 @@ function App() {
           </div>
         )}
 
-        {/* Quantum instructions */}
+        {/* Quantum quick tips */}
         {quantumMode && (
           <div className="quantum-instructions">
-            <strong>⚛️ Quantum Chess Rules:</strong>
+            <strong>⚛️ Quick Tips:</strong>
             <ul>
-              <li>Click "Split Move" to put a piece in superposition (50/50 at two squares)</li>
-              <li>When you capture a superposition piece, it collapses randomly!</li>
-              <li>Kings cannot enter superposition</li>
-              <li>Max <strong>{gameState.maxSuperpositions}</strong> pieces per player in superposition</li>
-              <li>Each superposition piece has a unique color border</li>
+              <li><strong>Split:</strong> Put a piece in two places at once (50/50)</li>
+              <li><strong>Capture:</strong> Superposition pieces collapse randomly - they might escape!</li>
+              <li><strong>Limit:</strong> Max {gameState.maxSuperpositions} pieces in superposition per player</li>
             </ul>
           </div>
         )}
+
+        {/* Help button */}
+        <button className="help-btn" onClick={() => setShowRulesModal(true)}>
+          ?
+        </button>
+
+        {/* Rules modal */}
+        <RulesModal isOpen={showRulesModal} onClose={() => setShowRulesModal(false)} />
       </div>
     </>
   );
