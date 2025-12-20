@@ -1,0 +1,159 @@
+.game-end-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: overlay-fade-in 0.3s ease-out;
+}
+
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.game-end-modal {
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+  animation: modal-pop-in 0.4s ease-out;
+}
+
+@keyframes modal-pop-in {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.game-end-modal.winner {
+  border: 2px solid #27ae60;
+  box-shadow: 0 10px 50px rgba(39, 174, 96, 0.3);
+}
+
+.game-end-modal.loser {
+  border: 2px solid #e74c3c;
+}
+
+.game-end-modal.draw {
+  border: 2px solid #f39c12;
+}
+
+.end-title {
+  font-size: 2.5em;
+  margin: 0 0 10px 0;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.winner .end-title {
+  background: linear-gradient(90deg, #27ae60, #2ecc71);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.loser .end-title {
+  background: linear-gradient(90deg, #e74c3c, #c0392b);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.end-subtitle {
+  color: #aaa;
+  font-size: 1.1em;
+  margin: 0 0 30px 0;
+}
+
+.game-stats {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+.game-stats h3 {
+  margin: 0 0 15px 0;
+  color: #888;
+  font-size: 0.9em;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-value {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #fff;
+}
+
+.stat-label {
+  font-size: 0.8em;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.end-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.end-actions .action-btn {
+  flex: 1;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.rematch-btn {
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  color: white;
+}
+
+.rematch-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4);
+}
+
+.end-actions .leave-btn {
+  background: #333;
+  color: #e0e0e0;
+  border: 1px solid #555;
+}
+
+.end-actions .leave-btn:hover {
+  background: #444;
+}
+

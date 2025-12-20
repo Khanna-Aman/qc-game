@@ -1,0 +1,740 @@
+/**
+ * ChessEngine - Wraps chess.js for proper chess rules
+ * with QUANTUM MECHANICS layer on top
+ *
+ * Quantum Features:
+ * - Split moves: A piece can split into superposition at two squares
+ * - Probability tracking: Each piece position has a probability
+ * - Collapse: When capturing/measuring, superposition collapses
+ * - Merge: Two positions of same piece can merge back
+ */
+
+import { Chess } from 'chess.js';
+import type { Square, Move as ChessMove, PieceSymbol } from 'chess.js';
+
+export type Player = 'white' | 'black';
+export type PieceType = 'king' | 'queen' | 'rook' | 'bishop' | 'knight' | 'pawn';
+
+export interface Position {
+  file: number; // 0-7 (a-h)
+  rank: number; // 0-7 (1-8)
+}
+
+export interface QuantumPosition {
+  position: Position;
+  probability: number;
+}
+
+export interface QuantumPiece {
+  id: string;
+  type: PieceType;
+  owner: Player;
+  positions: QuantumPosition[]; // Multiple positions = superposition!
+  isInSuperposition: boolean;
+}
+
+export interface QuantumGameState {
+  pieces: Map<string, QuantumPiece>;
+  currentPlayer: Player;
+  turnNumber: number;
+  gameStatus: GameStatus;
+  moveHistory: MoveRecord[];
+  quantumMode: boolean; // Toggle quantum mechanics on/off
+  maxSuperpositions: number; // Max pieces per player in superposition (1-5)
+  lastCollapseResult?: CollapseResult; // For animation
+  chess: Chess;
+  // Game result for resign/draw
+  result?: 'white_wins' | 'black_wins' | 'draw';
+  resultReason?: 'checkmate' | 'stalemate' | 'resignation' | 'timeout' | 'agreement' | 'repetition' | 'insufficient_material' | '50_move';
+}
+
+export type GameStatus =
+  | 'active'
+  | 'white_wins'
+  | 'black_wins'
+  | 'draw_stalemate'
+  | 'draw_50_move'
+  | 'draw_agreement'
+  | 'draw_repetition'
+  | 'draw_insufficient';
+
+export interface MoveRecord {
+  from: string;
+  to: string;
+  to2?: string; // For split moves
+  piece: string;
+  type: 'classical' | 'split' | 'merge' | 'capture' | 'quantum_capture';
+  captured?: string;
+  promotion?: PieceType;
+  collapseResult?: CollapseResult;
+}
+
+export interface CollapseResult {
+  pieceId: string;
+  collapsedTo: Square;
+  probability: number;
+  wasCapture: boolean;
+}
+
+export interface QuantumMove {
+  type: 'classical' | 'split';
+  from: Square;
+  to: Square;
+  to2?: Square; // For split moves
+  promotion?: PieceSymbol;
+}
+
+// Seeded random for deterministic collapse (for P2P sync)
+let rngSeed = Date.now();
+export function setRngSeed(seed: number) { rngSeed = seed; }
+function seededRandom(): number {
+  rngSeed = (rngSeed * 1103515245 + 12345) & 0x7fffffff;
+  return rngSeed / 0x7fffffff;
+}
+
+// Convert position to chess.js square notation
+export function posToSquare(pos: Position): Square {
+  const files = 'abcdefgh';
+  return `${files[pos.file]}${pos.rank + 1}` as Square;
+}
+
+// Convert chess.js square to position
+export function squareToPos(square: Square): Position {
+  const file = square.charCodeAt(0) - 'a'.charCodeAt(0);
+  const rank = parseInt(square[1]) - 1;
+  return { file, rank };
+}
+
+// Map chess.js piece to our type
+function chessPieceToType(piece: PieceSymbol): PieceType {
+  const map: Record<PieceSymbol, PieceType> = {
+    'k': 'king', 'q': 'queen', 'r': 'rook',
+    'b': 'bishop', 'n': 'knight', 'p': 'pawn'
+  };
+  return map[piece];
+}
+
+/**
+ * Create initial game state
+ */
+export function createGame(quantumMode: boolean = true, maxSuperpositions: number = 2): QuantumGameState {
+  const chess = new Chess();
+  const pieces = new Map<string, QuantumPiece>();
+
+  // Extract pieces from chess.js board
+  const board = chess.board();
+  const pieceCount: Record<string, number> = {};
+
+  for (let rank = 0; rank < 8; rank++) {
+    for (let file = 0; file < 8; file++) {
+      const square = board[7 - rank]?.[file];
+      if (square) {
+        const owner: Player = square.color === 'w' ? 'white' : 'black';
+        const type = chessPieceToType(square.type);
+        const prefix = owner === 'white' ? 'w' : 'b';
+        const key = `${prefix}${type[0].toUpperCase()}`;
+        pieceCount[key] = (pieceCount[key] || 0);
+        const id = `${key}${pieceCount[key]++}`;
+
+        pieces.set(id, {
+          id,
+          type,
+          owner,
+          positions: [{ position: { file, rank }, probability: 1.0 }],
+          isInSuperposition: false
+        });
+      }
+    }
+  }
+
+  return {
+    pieces,
+    currentPlayer: 'white',
+    turnNumber: 1,
+    gameStatus: 'active',
+    moveHistory: [],
+    quantumMode,
+    maxSuperpositions,
+    chess
+  };
+}
+
+/**
+ * Find piece at a given square
+ */
+export function findPieceAtSquare(state: QuantumGameState, square: Square): QuantumPiece | null {
+  const pos = squareToPos(square);
+  for (const [, piece] of state.pieces) {
+    for (const qPos of piece.positions) {
+      if (qPos.position.file === pos.file && qPos.position.rank === pos.rank && qPos.probability > 0) {
+        return piece;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Get superposition pieces for display
+ */
+export function getSuperpositionPieces(state: QuantumGameState): Array<{
+  square: Square;
+  pieceType: string;
+  probability: number;
+  pieceId: string;
+}> {
+  const result: Array<{ square: Square; pieceType: string; probability: number; pieceId: string }> = [];
+
+  for (const [, piece] of state.pieces) {
+    if (piece.isInSuperposition) {
+      for (const qPos of piece.positions) {
+        if (qPos.probability > 0.01) {
+          const square = posToSquare(qPos.position);
+          const color = piece.owner === 'white' ? 'w' : 'b';
+          const typeChar = piece.type === 'knight' ? 'N' : piece.type[0].toUpperCase();
+          result.push({
+            square,
+            pieceType: `${color}${typeChar}`,
+            probability: qPos.probability,
+            pieceId: piece.id
+          });
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Get all legal moves for current player
+ */
+export function getLegalMoves(state: QuantumGameState): ChessMove[] {
+  return state.chess.moves({ verbose: true });
+}
+
+/**
+ * Check if a move is legal
+ */
+export function isLegalMove(state: QuantumGameState, from: Square, to: Square): boolean {
+  const moves = state.chess.moves({ square: from, verbose: true });
+  return moves.some(m => m.to === to);
+}
+
+/**
+ * Make a classical move (handles quantum captures with collapse)
+ */
+export function makeMove(
+  state: QuantumGameState,
+  from: Square,
+  to: Square,
+  promotion?: PieceSymbol,
+  collapseSeed?: number
+): { success: boolean; newState: QuantumGameState; error?: string; collapseResult?: CollapseResult } {
+  try {
+    // Check if moving piece is in superposition at a different position than chess.js knows
+    const movingPiece = findPieceAtSquare(state, from);
+    const fromPos = squareToPos(from);
+
+    // Clone the chess state
+    let newChess = new Chess(state.chess.fen());
+
+    // If the piece is in superposition, chess.js might not know about this position
+    // We need to check if chess.js has a piece at 'from', and if not, temporarily add one
+    const chessHasPieceAtFrom = newChess.get(from) !== null;
+
+    if (!chessHasPieceAtFrom && movingPiece && movingPiece.isInSuperposition) {
+      // The piece is at a quantum position that chess.js doesn't know about
+      // We need to validate this move by temporarily placing the piece there
+
+      // Find where chess.js thinks this piece is (the first split position)
+      const chessPosition = movingPiece.positions.find(p => {
+        const sq = posToSquare(p.position);
+        const pieceAtSq = newChess.get(sq);
+        if (!pieceAtSq) return false;
+        return pieceAtSq.color === (movingPiece.owner === 'white' ? 'w' : 'b') &&
+          chessPieceToType(pieceAtSq.type) === movingPiece.type;
+      });
+
+      if (chessPosition) {
+        // Move from the chess.js known position to 'from', then to 'to'
+        // Actually, we need to rebuild the board with the piece at 'from'
+        const fen = newChess.fen();
+        const fenParts = fen.split(' ');
+
+        // Get piece notation
+        const pieceColor = movingPiece.owner === 'white' ? 'w' : 'b';
+        const pieceTypeChar = movingPiece.type === 'knight' ? 'n' : movingPiece.type[0];
+        const pieceNotation = pieceColor === 'w' ? pieceTypeChar.toUpperCase() : pieceTypeChar.toLowerCase();
+
+        // Remove piece from original position and place at 'from'
+        const chessSquare = posToSquare(chessPosition.position);
+        newChess.remove(chessSquare);
+        newChess.put({ type: pieceTypeChar as PieceSymbol, color: pieceColor }, from);
+      }
+    }
+
+    const move = newChess.move({ from, to, promotion });
+
+    if (!move) {
+      return { success: false, newState: state, error: 'Invalid move' };
+    }
+
+    // Update quantum pieces
+    const newPieces = new Map(state.pieces);
+
+    // Find the piece that moved (fromPos already calculated above)
+    const toPos = squareToPos(to);
+    let collapseResult: CollapseResult | undefined;
+
+    let movedPiece: QuantumPiece | undefined;
+    for (const [, piece] of newPieces) {
+      const atFrom = piece.positions.find(
+        p => p.position.file === fromPos.file && p.position.rank === fromPos.rank
+      );
+      if (atFrom && piece.owner === state.currentPlayer) {
+        movedPiece = {
+          ...piece,
+          positions: [...piece.positions],
+          isInSuperposition: false // Moving collapses the piece if it was in superposition
+        };
+        break;
+      }
+    }
+
+    if (movedPiece) {
+      // If piece was in superposition, it collapses to the moved position
+      movedPiece.positions = [{ position: toPos, probability: 1.0 }];
+      movedPiece.isInSuperposition = false;
+
+      // Handle promotion
+      if (move.promotion) {
+        movedPiece.type = chessPieceToType(move.promotion);
+      }
+
+      newPieces.set(movedPiece.id, movedPiece);
+
+      // Handle castling - also move the rook!
+      // chess.js flags: 'k' = kingside castle, 'q' = queenside castle
+      if (move.flags.includes('k') || move.flags.includes('q')) {
+        const isKingside = move.flags.includes('k');
+        const rank = state.currentPlayer === 'white' ? 0 : 7;
+
+        // Find the rook that needs to move
+        const rookFromFile = isKingside ? 7 : 0;  // h-file or a-file
+        const rookToFile = isKingside ? 5 : 3;    // f-file or d-file
+
+        for (const [id, piece] of newPieces) {
+          if (piece.type === 'rook' && piece.owner === state.currentPlayer) {
+            const rookPos = piece.positions.find(
+              p => p.position.file === rookFromFile && p.position.rank === rank
+            );
+            if (rookPos) {
+              const updatedRook: QuantumPiece = {
+                ...piece,
+                positions: [{ position: { file: rookToFile, rank }, probability: 1.0 }],
+                isInSuperposition: false
+              };
+              newPieces.set(id, updatedRook);
+              break;
+            }
+          }
+        }
+      }
+
+      // Handle capture - with quantum collapse!
+      if (move.captured) {
+        // For en passant, the captured pawn is NOT at toPos - it's on the same rank as fromPos
+        // chess.js flags: 'e' = en passant capture
+        const isEnPassant = move.flags.includes('e');
+        let capturedPos = toPos;
+        if (isEnPassant) {
+          // En passant: captured pawn is on same file as toPos, but same rank as fromPos
+          capturedPos = { file: toPos.file, rank: fromPos.rank };
+        }
+
+        for (const [id, piece] of newPieces) {
+          // Skip the piece that just moved (the attacker)
+          if (id === movedPiece.id) continue;
+
+          if (piece.owner !== state.currentPlayer) {
+            const atCapturePos = piece.positions.find(
+              p => p.position.file === capturedPos.file && p.position.rank === capturedPos.rank
+            );
+            if (atCapturePos) {
+              // If captured piece is in superposition, COLLAPSE it first!
+              if (piece.isInSuperposition && state.quantumMode) {
+                if (collapseSeed !== undefined) setRngSeed(collapseSeed);
+                const roll = seededRandom();
+
+                // Check if capture succeeds based on probability at that square
+                if (roll < atCapturePos.probability) {
+                  // Capture succeeds - piece was "really" there
+                  newPieces.delete(id);
+                  collapseResult = {
+                    pieceId: id,
+                    collapsedTo: posToSquare(capturedPos),
+                    probability: atCapturePos.probability,
+                    wasCapture: true
+                  };
+                } else {
+                  // Capture "fails" - piece wasn't there! It collapses to other position
+                  const otherPositions = piece.positions.filter(
+                    p => p.position.file !== capturedPos.file || p.position.rank !== capturedPos.rank
+                  );
+                  if (otherPositions.length > 0) {
+                    const collapsed = otherPositions[0]!;
+                    const collapsedPiece: QuantumPiece = {
+                      ...piece,
+                      positions: [{ position: collapsed.position, probability: 1.0 }],
+                      isInSuperposition: false
+                    };
+                    newPieces.set(id, collapsedPiece);
+                    collapseResult = {
+                      pieceId: id,
+                      collapsedTo: posToSquare(collapsed.position),
+                      probability: collapsed.probability,
+                      wasCapture: false
+                    };
+                  }
+                }
+              } else {
+                // Normal capture
+                newPieces.delete(id);
+              }
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // Determine game status
+    let gameStatus: GameStatus = 'active';
+    if (newChess.isCheckmate()) {
+      gameStatus = state.currentPlayer === 'white' ? 'white_wins' : 'black_wins';
+    } else if (newChess.isStalemate()) {
+      gameStatus = 'draw_stalemate';
+    } else if (newChess.isDraw()) {
+      if (newChess.isThreefoldRepetition()) gameStatus = 'draw_repetition';
+      else if (newChess.isInsufficientMaterial()) gameStatus = 'draw_insufficient';
+      else gameStatus = 'draw_50_move';
+    }
+
+    const newState: QuantumGameState = {
+      pieces: newPieces,
+      currentPlayer: state.currentPlayer === 'white' ? 'black' : 'white',
+      turnNumber: state.turnNumber + 1,
+      gameStatus,
+      moveHistory: [...state.moveHistory, {
+        from, to,
+        piece: movedPiece?.id || 'unknown',
+        type: collapseResult ? 'quantum_capture' : (move.captured ? 'capture' : 'classical'),
+        captured: move.captured ? 'captured' : undefined,
+        promotion: move.promotion ? chessPieceToType(move.promotion) : undefined,
+        collapseResult
+      }],
+      quantumMode: state.quantumMode,
+      maxSuperpositions: state.maxSuperpositions,
+      lastCollapseResult: collapseResult,
+      chess: newChess
+    };
+
+    return { success: true, newState, collapseResult };
+  } catch (error) {
+    return {
+      success: false,
+      newState: state,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+/**
+ * Make a SPLIT MOVE - piece enters quantum superposition at two squares
+ * Both target squares must be valid moves from the source
+ */
+export function makeSplitMove(
+  state: QuantumGameState,
+  from: Square,
+  to1: Square,
+  to2: Square
+): { success: boolean; newState: QuantumGameState; error?: string } {
+  if (!state.quantumMode) {
+    return { success: false, newState: state, error: 'Quantum mode is disabled' };
+  }
+
+  // Both targets must be legal moves
+  const moves = state.chess.moves({ square: from, verbose: true });
+  const move1Valid = moves.some(m => m.to === to1);
+  const move2Valid = moves.some(m => m.to === to2);
+
+  if (!move1Valid || !move2Valid) {
+    return { success: false, newState: state, error: 'Invalid split move targets' };
+  }
+
+  if (to1 === to2) {
+    return { success: false, newState: state, error: 'Split targets must be different' };
+  }
+
+  // Find the piece
+  const piece = findPieceAtSquare(state, from);
+  if (!piece || piece.owner !== state.currentPlayer) {
+    return { success: false, newState: state, error: 'No valid piece at source' };
+  }
+
+  // Kings cannot split (would break check detection)
+  if (piece.type === 'king') {
+    return { success: false, newState: state, error: 'Kings cannot enter superposition' };
+  }
+
+  // Pieces already in superposition cannot split again
+  if (piece.isInSuperposition) {
+    return { success: false, newState: state, error: 'Piece is already in superposition' };
+  }
+
+  // Limit: Max N pieces per player in superposition (configurable)
+  const maxSuperpositions = state.maxSuperpositions ?? 2;
+  let superpositionCount = 0;
+  for (const [, p] of state.pieces) {
+    if (p.owner === state.currentPlayer && p.isInSuperposition) {
+      superpositionCount++;
+    }
+  }
+  if (superpositionCount >= maxSuperpositions) {
+    return {
+      success: false,
+      newState: state,
+      error: `Max ${maxSuperpositions} pieces in superposition allowed`
+    };
+  }
+
+  // Clone state
+  const newPieces = new Map(state.pieces);
+  const newPiece: QuantumPiece = {
+    ...piece,
+    positions: [
+      { position: squareToPos(to1), probability: 0.5 },
+      { position: squareToPos(to2), probability: 0.5 }
+    ],
+    isInSuperposition: true
+  };
+  newPieces.set(piece.id, newPiece);
+
+  // For chess.js, we move to the first position (main branch)
+  const newChess = new Chess(state.chess.fen());
+  newChess.move({ from, to: to1 });
+
+  const newState: QuantumGameState = {
+    pieces: newPieces,
+    currentPlayer: state.currentPlayer === 'white' ? 'black' : 'white',
+    turnNumber: state.turnNumber + 1,
+    gameStatus: state.gameStatus,
+    moveHistory: [...state.moveHistory, {
+      from, to: to1, to2,
+      piece: piece.id,
+      type: 'split'
+    }],
+    quantumMode: state.quantumMode,
+    maxSuperpositions: state.maxSuperpositions,
+    chess: newChess
+  };
+
+  return { success: true, newState };
+}
+
+/**
+ * Collapse a superposition - randomly choose one position based on probabilities
+ */
+export function collapsePiece(
+  state: QuantumGameState,
+  pieceId: string,
+  seed?: number
+): { newState: QuantumGameState; collapsedTo: Square; probability: number } | null {
+  const piece = state.pieces.get(pieceId);
+  if (!piece || !piece.isInSuperposition) return null;
+
+  if (seed !== undefined) setRngSeed(seed);
+  const roll = seededRandom();
+
+  // Pick position based on cumulative probability
+  let cumulative = 0;
+  let chosenPos = piece.positions[0]!;
+  for (const qPos of piece.positions) {
+    cumulative += qPos.probability;
+    if (roll < cumulative) {
+      chosenPos = qPos;
+      break;
+    }
+  }
+
+  const newPieces = new Map(state.pieces);
+  const newPiece: QuantumPiece = {
+    ...piece,
+    positions: [{ position: chosenPos.position, probability: 1.0 }],
+    isInSuperposition: false
+  };
+  newPieces.set(pieceId, newPiece);
+
+  // Update chess.js to reflect the collapsed position
+  // This is tricky - we need to rebuild the board
+  const collapsedSquare = posToSquare(chosenPos.position);
+
+  return {
+    newState: { ...state, pieces: newPieces },
+    collapsedTo: collapsedSquare,
+    probability: chosenPos.probability
+  };
+}
+
+/**
+ * Check game status
+ */
+export function isGameOver(state: QuantumGameState): boolean {
+  return state.gameStatus !== 'active';
+}
+
+export function isInCheck(state: QuantumGameState): boolean {
+  return state.chess.isCheck();
+}
+
+/**
+ * Check if a piece is in superposition
+ */
+export function isPieceInSuperposition(state: QuantumGameState, square: Square): boolean {
+  const piece = findPieceAtSquare(state, square);
+  return piece?.isInSuperposition ?? false;
+}
+
+/**
+ * Get probability of piece at square
+ */
+export function getProbabilityAtSquare(state: QuantumGameState, square: Square): number {
+  const pos = squareToPos(square);
+  for (const [, piece] of state.pieces) {
+    for (const qPos of piece.positions) {
+      if (qPos.position.file === pos.file && qPos.position.rank === pos.rank) {
+        return qPos.probability;
+      }
+    }
+  }
+  return 0;
+}
+
+/**
+ * Get board position for react-chessboard
+ * Returns { [square]: { pieceType: "wK" } } format
+ */
+export function getBoardPosition(state: QuantumGameState): Record<string, { pieceType: string }> {
+  const position: Record<string, { pieceType: string }> = {};
+
+  for (const [, piece] of state.pieces) {
+    for (const qPos of piece.positions) {
+      if (qPos.probability > 0.01) {
+        const square = posToSquare(qPos.position);
+        const color = piece.owner === 'white' ? 'w' : 'b';
+        const typeChar = piece.type === 'knight' ? 'N' : piece.type[0].toUpperCase();
+        position[square] = { pieceType: `${color}${typeChar}` };
+      }
+    }
+  }
+
+  return position;
+}
+
+/**
+ * Clone game state
+ */
+export function cloneState(state: QuantumGameState): QuantumGameState {
+  return {
+    pieces: new Map(Array.from(state.pieces.entries()).map(([k, v]) => [k, {
+      ...v,
+      positions: [...v.positions.map(p => ({ ...p, position: { ...p.position } }))]
+    }])),
+    currentPlayer: state.currentPlayer,
+    turnNumber: state.turnNumber,
+    gameStatus: state.gameStatus,
+    moveHistory: [...state.moveHistory],
+    quantumMode: state.quantumMode,
+    maxSuperpositions: state.maxSuperpositions,
+    chess: new Chess(state.chess.fen())
+  };
+}
+
+/**
+ * Toggle quantum mode
+ */
+export function setQuantumMode(state: QuantumGameState, enabled: boolean): QuantumGameState {
+  return { ...state, quantumMode: enabled };
+}
+
+/**
+ * Generate Quantum FEN - a serialized representation of the game state
+ * Format: STANDARD_FEN | TURN | QUANTUM_DATA
+ * Quantum data: pieceId:sq1@prob1,sq2@prob2;pieceId2:...
+ * Example: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w | 1 | wN1:f3@50,h3@50
+ */
+export function toQuantumFEN(state: QuantumGameState): string {
+  const standardFen = state.chess.fen().split(' ').slice(0, 2).join(' ');
+
+  // Build quantum data for superposition pieces
+  const quantumParts: string[] = [];
+  for (const [id, piece] of state.pieces) {
+    if (piece.isInSuperposition) {
+      const positions = piece.positions
+        .map(p => `${posToSquare(p.position)}@${Math.round(p.probability * 100)}`)
+        .join(',');
+      quantumParts.push(`${id}:${positions}`);
+    }
+  }
+
+  const quantumData = quantumParts.length > 0 ? quantumParts.join(';') : '-';
+
+  return `${standardFen} | ${state.turnNumber} | ${quantumData}`;
+}
+
+/**
+ * Get a human-readable game log
+ */
+export function getGameLog(state: QuantumGameState): string {
+  const lines: string[] = [
+    `=== Quantum Chess Game Log ===`,
+    `Turn: ${state.turnNumber}`,
+    `Current Player: ${state.currentPlayer}`,
+    `Status: ${state.gameStatus}`,
+    `Quantum Mode: ${state.quantumMode ? 'ON' : 'OFF'}`,
+    ``,
+    `QFEN: ${toQuantumFEN(state)}`,
+    ``,
+    `=== Move History ===`
+  ];
+
+  for (let i = 0; i < state.moveHistory.length; i++) {
+    const move = state.moveHistory[i];
+    let moveStr = `${i + 1}. ${move.piece} ${move.from}->${move.to}`;
+    if (move.type === 'split' && move.to2) {
+      moveStr = `${i + 1}. ${move.piece} SPLIT ${move.from}->${move.to}/${move.to2}`;
+    } else if (move.type === 'quantum_capture' && move.collapseResult) {
+      const cr = move.collapseResult;
+      moveStr += ` [COLLAPSE: ${cr.pieceId} -> ${cr.collapsedTo} (${Math.round(cr.probability * 100)}%) ${cr.wasCapture ? '✓ Captured' : '✗ Escaped'}]`;
+    } else if (move.captured) {
+      moveStr += ` x${move.captured}`;
+    }
+    lines.push(moveStr);
+  }
+
+  // Superposition pieces
+  lines.push('');
+  lines.push('=== Superposition Pieces ===');
+  for (const [id, piece] of state.pieces) {
+    if (piece.isInSuperposition) {
+      const positions = piece.positions
+        .map(p => `${posToSquare(p.position)}(${Math.round(p.probability * 100)}%)`)
+        .join(' + ');
+      lines.push(`${id}: ${positions}`);
+    }
+  }
+
+  return lines.join('\n');
+}
+

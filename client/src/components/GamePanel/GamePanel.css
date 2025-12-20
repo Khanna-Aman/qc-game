@@ -1,0 +1,255 @@
+.game-panel {
+  width: 280px;
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 12px;
+  padding: 20px;
+  color: #e0e0e0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.game-panel h2 {
+  margin: 0 0 10px 0;
+  font-size: 1.4em;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.game-panel h3 {
+  margin: 0 0 10px 0;
+  font-size: 1em;
+  color: #888;
+  border-bottom: 1px solid #333;
+  padding-bottom: 5px;
+}
+
+.panel-section {
+  margin-bottom: 20px;
+}
+
+.room-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85em;
+}
+
+.room-label {
+  color: #888;
+}
+
+.room-id {
+  background: #333;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.status-dot.connected {
+  background: #27ae60;
+  box-shadow: 0 0 8px #27ae60;
+}
+
+.status-dot.disconnected {
+  background: #e74c3c;
+  animation: pulse-disconnect 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-disconnect {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 2px solid transparent;
+}
+
+.player.current-player {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.player-icon {
+  font-size: 1.5em;
+}
+
+.player-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.king-probability {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.turn-indicator {
+  text-align: center;
+}
+
+.turn-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 1em;
+}
+
+.turn-badge.my-turn {
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  color: white;
+  animation: pulse-turn 2s ease-in-out infinite;
+}
+
+.turn-badge.opponent-turn {
+  background: #444;
+  color: #aaa;
+}
+
+@keyframes pulse-turn {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.turn-number {
+  margin-top: 8px;
+  font-size: 0.85em;
+  color: #888;
+}
+
+.move-list {
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 0.85em;
+  font-family: monospace;
+}
+
+.move-list.empty {
+  color: #666;
+  font-style: italic;
+}
+
+.move-pair {
+  display: grid;
+  grid-template-columns: 30px 1fr 1fr;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid #2a2a4a;
+}
+
+.move-number {
+  color: #666;
+}
+
+.white-move {
+  color: #f0d9b5;
+}
+
+.black-move {
+  color: #b58863;
+}
+
+.quantum-help {
+  font-size: 0.85em;
+}
+
+.quantum-help ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.quantum-help li {
+  margin-bottom: 6px;
+  color: #aaa;
+}
+
+.quantum-help li strong {
+  color: #e0e0e0;
+}
+
+/* Game Actions */
+.game-actions {
+  border-top: 1px solid #333;
+  padding-top: 15px;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.export-btn {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.export-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.import-btn {
+  background: #333;
+  color: #e0e0e0;
+  border: 1px solid #555;
+}
+
+.import-btn:hover {
+  background: #444;
+  border-color: #667eea;
+}
