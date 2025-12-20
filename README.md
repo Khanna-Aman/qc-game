@@ -37,7 +37,7 @@
 ## 🎮 Features
 
 - **Quantum Mechanics**: Pieces can exist in superposition across multiple squares
-- **Split Moves**: Any piece (except Kings) can split into two positions simultaneously (50% probability each)
+- **Split Moves**: Any piece (except Kings and Pawns) can split into two positions simultaneously (50% probability each)
 - **Measurement/Collapse**: Capturing triggers quantum measurement — piece might be there, or it might escape!
 - **P2P Multiplayer**: Direct peer-to-peer connection via WebRTC (no game server)
 - **Deterministic RNG**: Seeded random number generator ensures both peers see identical results
@@ -156,7 +156,7 @@ Once peers connect, all game data flows directly P2P.
 - Each position has an associated probability (must sum to 1.0)
 
 ### Split Moves
-- Any piece (except the King) can perform "split" moves
+- Any piece (except Kings and Pawns) can perform "split" moves
 - Click "Split Move", select a piece, then choose two valid destinations
 - The piece enters superposition at both squares (50% probability each)
 
@@ -168,8 +168,8 @@ Once peers connect, all game data flows directly P2P.
 - Uses seeded RNG for deterministic results across both players
 
 ### Win Condition
-- Capture the opponent's King to win
-- Even a King in superposition can be captured if the measurement favors you!
+- **Capture the opponent's King to win** (no checkmate - just take the King!)
+- Kings and Pawns cannot split - only Queen, Rook, Bishop, Knight can enter superposition
 
 ## 🔒 Security & Fair Play
 

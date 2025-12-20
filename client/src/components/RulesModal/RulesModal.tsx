@@ -13,10 +13,10 @@ export function RulesModal({ isOpen, onClose }: RulesModalProps) {
       <div className="rules-modal" onClick={(e) => e.stopPropagation()}>
         <button className="rules-close" onClick={onClose}>×</button>
         <h2>⚛️ Quantum Chess Rules</h2>
-        
+
         <section>
           <h3>🎯 Objective</h3>
-          <p>Capture the opponent's King to win. A King in superposition can "escape" a capture, but if captured, you win!</p>
+          <p>Capture the opponent's King to win! Unlike regular chess, there's no checkmate - just capture the King directly.</p>
         </section>
 
         <section>
@@ -31,7 +31,7 @@ export function RulesModal({ isOpen, onClose }: RulesModalProps) {
             <li>Select a piece, then choose <strong>two</strong> destination squares</li>
             <li>The piece enters <strong>superposition</strong> - it exists at both squares simultaneously with 50% probability each</li>
             <li>Superposition pieces are shown with colored borders and probability badges</li>
-            <li><strong>Kings cannot split</strong> - they must always be in a definite position</li>
+            <li><strong>Kings and Pawns cannot split</strong> - only Queen, Rook, Bishop, Knight can enter superposition</li>
           </ul>
         </section>
 

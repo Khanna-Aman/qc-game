@@ -496,6 +496,11 @@ export function makeSplitMove(
     return { success: false, newState: state, error: 'Kings cannot enter superposition' };
   }
 
+  // Pawns cannot split (keeps the game simpler)
+  if (piece.type === 'pawn') {
+    return { success: false, newState: state, error: 'Pawns cannot enter superposition' };
+  }
+
   // Pieces already in superposition cannot split again
   if (piece.isInSuperposition) {
     return { success: false, newState: state, error: 'Piece is already in superposition' };

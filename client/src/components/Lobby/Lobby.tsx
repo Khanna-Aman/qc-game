@@ -161,7 +161,7 @@ export function Lobby({
             <li><strong>Split moves</strong> put pieces in superposition (50% at two squares)</li>
             <li><strong>Captures</strong> on superposition pieces collapse them randomly</li>
             <li>If collapse favors you, <strong>capture succeeds</strong>; otherwise, the piece <strong>escapes!</strong></li>
-            <li>Capture the opponent's King to win!</li>
+            <li><strong>Capture the King to win!</strong> (no checkmate in quantum chess)</li>
           </ul>
         </div>
       </div>

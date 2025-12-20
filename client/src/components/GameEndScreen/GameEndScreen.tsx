@@ -28,8 +28,8 @@ export function GameEndScreen({
 
   const getSubtitle = () => {
     switch (gameState.gameStatus) {
-      case 'white_wins': return 'White wins by checkmate';
-      case 'black_wins': return 'Black wins by checkmate';
+      case 'white_wins': return 'White wins by King capture';
+      case 'black_wins': return 'Black wins by King capture';
       case 'draw_stalemate': return 'Game ended in stalemate';
       case 'draw_50_move': return 'Draw by 50-move rule';
       case 'draw_agreement': return 'Draw by agreement';
