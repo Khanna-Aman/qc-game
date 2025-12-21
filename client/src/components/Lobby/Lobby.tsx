@@ -89,7 +89,7 @@ export function Lobby({
         <QuantumAnimation />
       </Suspense>
 
-      {/* Interactive Particle Field - full screen, reacts to mouse */}
+      {/* Interactive Particle Field */}
       <ParticleField particleCount={60} />
 
       <div className="lobby-card">

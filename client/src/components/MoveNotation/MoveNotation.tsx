@@ -85,9 +85,9 @@ export function MoveNotation({
     }
   }, [totalMoves]);
 
-  // TODO: Navigation handlers - implement when history viewing is added
-  // const isViewingHistory = _viewingMoveIndex !== null;
-  // const currentViewIndex = _viewingMoveIndex ?? totalMoves - 1;
+  // Navigation state
+  const isViewingHistory = _viewingMoveIndex !== null;
+  const currentViewIndex = _viewingMoveIndex ?? totalMoves - 1;
   // const goToStart = () => _onNavigate?.(0);
   // const goBack = () => _onNavigate?.(Math.max(0, currentViewIndex - 1));
   // const goForward = () => _onNavigate?.(Math.min(totalMoves - 1, currentViewIndex + 1));

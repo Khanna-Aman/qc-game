@@ -1,9 +1,9 @@
 .particle-field {
-  position: fixed;
+  position: absolute;
   inset: 0;
   overflow: hidden;
-  pointer-events: all;
-  z-index: 5;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .field-particle {

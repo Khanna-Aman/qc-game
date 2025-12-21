@@ -31,7 +31,7 @@ export function ParticleField({ particleCount = 30 }: ParticleFieldProps) {
   useEffect(() => {
     const colors = ['#00f0ff', '#8b5cf6', '#d946ef', '#06b6d4', '#a855f7'];
     const newParticles: Particle[] = [];
-    
+
     for (let i = 0; i < particleCount; i++) {
       const x = Math.random() * 100;
       const y = Math.random() * 100;
@@ -70,14 +70,14 @@ export function ParticleField({ particleCount = 30 }: ParticleFieldProps) {
         const dy = mousePos.y - particle.baseY;
         const distance = Math.sqrt(dx * dx + dy * dy);
         const maxDistance = 25;
-        
+
         if (distance < maxDistance && mousePos.x >= 0) {
           // Push particles away from mouse
           const force = (maxDistance - distance) / maxDistance;
           const angle = Math.atan2(dy, dx);
           const pushX = particle.baseX - Math.cos(angle) * force * 8;
           const pushY = particle.baseY - Math.sin(angle) * force * 8;
-          
+
           return {
             ...particle,
             x: particle.x + (pushX - particle.x) * 0.15,
@@ -92,10 +92,10 @@ export function ParticleField({ particleCount = 30 }: ParticleFieldProps) {
           };
         }
       }));
-      
+
       animationRef.current = requestAnimationFrame(animate);
     };
-    
+
     animationRef.current = requestAnimationFrame(animate);
     return () => {
       if (animationRef.current) {
